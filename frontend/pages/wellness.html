@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="../public/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wellness - MaatriCare AI</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="page-content">
+    <div class="page-header">
+      <h1>Exercise &amp; Wellness</h1>
+      <p>Safe routines to keep you active and relaxed.</p>
+    </div>
+
+    <div id="exerciseGrid" class="exercise-grid"></div>
+
+    <div class="glass-panel mental-health-panel">
+      <h2>
+        <i data-lucide="heart-pulse" width="24" height="24" style="color:#e94a5a;"></i> Mental Health Check-In
+      </h2>
+      <p>How are you feeling today? Your mental wellbeing is just as important as your physical health.</p>
+
+      <div id="mentalButtons" class="mental-buttons">
+        <button class="btn-primary mental-btn-great" onclick="logMentalState('Great')">Great 🌟</button>
+        <button class="btn-primary mental-btn-okay" onclick="logMentalState('Okay')">Okay 😐</button>
+        <button class="btn-primary mental-btn-support" onclick="logMentalState('Need Support')">Need Support 💖</button>
+      </div>
+      <div id="mentalStatus" class="mental-status"></div>
+    </div>
+
+    <!-- Timer Overlay -->
+    <div id="timerOverlay" class="timer-overlay">
+      <div class="glass-panel timer-card">
+        <h2 id="timerTitle"></h2>
+        <p>Breath in, breath out...</p>
+        <div id="timerDisplay" class="timer-display">0:00</div>
+        <button class="btn-primary timer-stop-btn" onclick="stopTimer()">Stop</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/layout.js"></script>
+  <script>
+    let exercises = [];
+    let activeTimer = null;
+    let timeLeft = 0;
+    let timerInterval = null;
+
+    function fetchExercises() {
+      fetch('http://localhost:5000/api/wellness')
+        .then(res => res.json())
+        .then(data => {
+          exercises = data;
+          renderExercises();
+        })
+        .catch(err => console.error(err));
+    }
+
+    function renderExercises() {
+      const grid = document.getElementById('exerciseGrid');
+      grid.innerHTML = exercises.map((ex, i) => `
+        <div class="glass-panel exercise-card">
+          <h3>${ex.title}</h3>
+          <div class="exercise-tags">
+            <span class="duration">${ex.duration}</span>
+            <span class="level">${ex.level}</span>
+          </div>
+          <p>${ex.desc}</p>
+          <button class="exercise-start-btn" onclick="startRoutine(${i})" id="startBtn${i}">
+            Start Routine
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function startRoutine(index) {
+      const ex = exercises[index];
+      const min = parseInt(ex.duration.split(' ')[0]) || 5;
+      timeLeft = min * 60;
+      activeTimer = ex;
+
+      document.getElementById('timerTitle').textContent = ex.title;
+      document.getElementById('timerOverlay').classList.add('visible');
+      updateTimerDisplay();
+
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        if (timeLeft <= 0) {
+          stopTimer();
+          alert("Routine Complete! Great job 🌸");
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      activeTimer = null;
+      document.getElementById('timerOverlay').classList.remove('visible');
+    }
+
+    function updateTimerDisplay() {
+      const m = Math.floor(timeLeft / 60);
+      const s = timeLeft % 60;
+      document.getElementById('timerDisplay').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function logMentalState(state) {
+      document.getElementById('mentalButtons').style.display = 'none';
+      const statusDiv = document.getElementById('mentalStatus');
+      statusDiv.textContent = `You logged your status as: ${state}. Remember to take it easy today! 🌸`;
+      statusDiv.classList.add('visible');
+
+      if (state === 'Need Support') {
+        alert("We hear you. Please utilize the SOS button if you need immediate consultation, or contact a loved one. 💕");
+      }
+    }
+
+    setTimeout(fetchExercises, 100);
+  </script>
+</body>
+</html>

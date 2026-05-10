@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="../public/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hospital Finder - MaatriCare AI</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="page-content">
+    <div style="display:flex; flex-direction:column; height:100%;">
+      <div class="page-header">
+        <h1>Hospital &amp; Doctor Finder</h1>
+        <p>Find trusted maternal care and emergency facilities near you.</p>
+      </div>
+
+      <div class="hospital-layout">
+        <!-- Left Side: List -->
+        <div class="hospital-list">
+          <div class="hospital-search">
+            <i data-lucide="search" width="20" height="20" class="search-icon"></i>
+            <input type="text" id="hospitalSearch" placeholder="Search by name, specialty, or zip code..." oninput="debouncedSearch()" />
+          </div>
+          <div id="hospitalResults" class="hospital-results"></div>
+        </div>
+
+        <!-- Right Side: Map -->
+        <div class="glass-panel hospital-map">
+          <iframe width="100%" height="100%" frameborder="0" style="border:0;" src="https://www.google.com/maps/embed/v1/search?q=hospitals&key=AIzaSyDummyKeyForHackathonDoNotUseInProd" allowfullscreen></iframe>
+          <div class="map-fallback">
+            <i data-lucide="map-pin" width="64" height="64" style="color:var(--primary); fill:var(--primary); opacity:0.8; margin-bottom:16px;"></i>
+            <h2>Interactive Map Region</h2>
+            <p>(A valid Google Maps API Key is required to render the live iframe here. Directions buttons still work!)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/layout.js"></script>
+  <script>
+    let searchTimeout = null;
+
+    function debouncedSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(fetchHospitals, 300);
+    }
+
+    function fetchHospitals() {
+      const query = document.getElementById('hospitalSearch').value;
+      fetch(`http://localhost:5000/api/hospitals?q=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(data => renderHospitals(data))
+        .catch(err => console.error(err));
+    }
+
+    function renderHospitals(hospitals) {
+      const container = document.getElementById('hospitalResults');
+
+      if (hospitals.length === 0) {
+        container.innerHTML = '<div class="no-results">No facilities found matching your search.</div>';
+        return;
+      }
+
+      container.innerHTML = hospitals.map(h => `
+        <div class="glass-panel hospital-card">
+          <div class="hospital-card-header">
+            <div>
+              <h3>${h.name}</h3>
+              <p class="hospital-type">${h.type}</p>
+            </div>
+            <div class="hospital-rating">
+              <i data-lucide="star" width="14" height="14" style="fill:#e6a800; color:#e6a800;"></i> ${h.rating}
+            </div>
+          </div>
+          <div class="hospital-info">
+            <div><i data-lucide="map-pin" width="16" height="16"></i> ${h.distance}</div>
+            <div><i data-lucide="phone" width="16" height="16"></i> ${h.phone}</div>
+          </div>
+          <button class="directions-btn" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.name + ' Hospital')}', '_blank')">
+            <i data-lucide="navigation" width="18" height="18"></i> Get Directions
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    setTimeout(fetchHospitals, 100);
+  </script>
+</body>
+</html>

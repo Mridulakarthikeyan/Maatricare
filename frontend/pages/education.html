@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="../public/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Education - MaatriCare AI</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="page-content">
+    <div class="page-header">
+      <h1>Educational Content</h1>
+      <p>Verified articles and tutorials to guide you safely.</p>
+    </div>
+
+    <div class="education-grid">
+      <!-- Articles Column -->
+      <div class="articles-column">
+        <h2><i data-lucide="book-open" width="24" height="24" style="color:var(--primary);"></i> Top Articles</h2>
+        <div id="articlesList"></div>
+      </div>
+
+      <!-- Videos Column -->
+      <div class="videos-column">
+        <h2><i data-lucide="video" width="24" height="24" style="color:var(--primary);"></i> Video Guides</h2>
+        <div id="videosList"></div>
+      </div>
+    </div>
+
+    <!-- Article Modal -->
+    <div id="articleModal" class="modal-overlay">
+      <div class="glass-panel article-modal">
+        <h2 id="articleModalTitle"></h2>
+        <div class="article-body">
+          <p id="articleModalIntro"></p>
+          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ac risus a nisi vulputate congue. Nulla facilisi. Praesent vestibulum tincidunt mattis.</p>
+          <p>Suspendisse potenti. In hac habitasse platea dictumst. Morbi non sapien non sapien efficitur fermentum. Curabitur in metus vel justo iaculis venenatis.</p>
+          <p>Always consult your primary healthcare physician regarding any information found here.</p>
+        </div>
+        <button class="btn-primary" onclick="closeArticleModal()" style="margin-top:24px; width:100%;">Close Article</button>
+      </div>
+    </div>
+
+    <!-- Video Modal -->
+    <div id="videoModal" class="modal-overlay dark" onclick="closeVideoModal()">
+      <div class="video-modal" onclick="event.stopPropagation()">
+        <iframe id="videoIframe" src="" title="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        <button class="close-btn" onclick="closeVideoModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/layout.js"></script>
+  <script>
+    let articles = [];
+    let videos = [];
+
+    function fetchEducation() {
+      fetch('http://localhost:5000/api/education')
+        .then(res => res.json())
+        .then(data => {
+          articles = data.articles || [];
+          videos = data.videos || [];
+          renderArticles();
+          renderVideos();
+        })
+        .catch(err => console.error(err));
+    }
+
+    function renderArticles() {
+      const list = document.getElementById('articlesList');
+      list.innerHTML = articles.map((art, idx) => `
+        <div class="glass-panel article-card">
+          <div>
+            <h3>${art.title}</h3>
+            <p>Read Time: ${art.readTime}</p>
+          </div>
+          <button class="article-read-btn" onclick="openArticle(${idx})">Read</button>
+        </div>
+      `).join('');
+    }
+
+    function renderVideos() {
+      const list = document.getElementById('videosList');
+      list.innerHTML = videos.map((vid, idx) => `
+        <div class="glass-panel video-card" onclick="openVideo(${idx})">
+          <div class="video-thumbnail">
+            <i data-lucide="play-circle" width="40" height="40" style="color:var(--primary); opacity:0.8;"></i>
+          </div>
+          <h3>${vid.title}</h3>
+          <p>Duration: ${vid.length}</p>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function openArticle(idx) {
+      const art = articles[idx];
+      document.getElementById('articleModalTitle').textContent = art.title;
+      document.getElementById('articleModalIntro').textContent = `This is the full text content for "${art.title}". In a production app, this would be fetched from a CMS or Database.`;
+      document.getElementById('articleModal').classList.add('visible');
+    }
+
+    function closeArticleModal() {
+      document.getElementById('articleModal').classList.remove('visible');
+    }
+
+    function openVideo(idx) {
+      const vid = videos[idx];
+      const iframe = document.getElementById('videoIframe');
+      iframe.src = `https://www.youtube.com/embed/${vid.videoId}?autoplay=1`;
+      iframe.title = vid.title;
+      document.getElementById('videoModal').classList.add('visible');
+    }
+
+    function closeVideoModal() {
+      document.getElementById('videoIframe').src = '';
+      document.getElementById('videoModal').classList.remove('visible');
+    }
+
+    setTimeout(fetchEducation, 100);
+  </script>
+</body>
+</html>

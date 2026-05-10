@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="../public/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - MaatriCare AI</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="login-wrapper container">
+    <a href="../index.html" class="back-home-link">
+      <i data-lucide="arrow-right" width="20" height="20" style="transform:rotate(180deg);"></i> Back Home
+    </a>
+
+    <div class="glass-panel login-card">
+      <i data-lucide="heart" width="48" height="48" style="color:var(--primary); fill:var(--primary); margin-bottom:16px;"></i>
+      <h2>Welcome Back</h2>
+      <p class="subtitle">Sign in to continue your journey 🌸</p>
+
+      <div id="loginError" class="login-error"></div>
+
+      <form id="loginForm" class="login-form">
+        <div>
+          <label>Email Address</label>
+          <div class="input-wrapper">
+            <i data-lucide="user" width="20" height="20" class="input-icon"></i>
+            <input type="email" id="emailInput" placeholder="you@example.com" />
+          </div>
+        </div>
+
+        <div>
+          <label>Password</label>
+          <div class="input-wrapper">
+            <i data-lucide="lock" width="20" height="20" class="input-icon"></i>
+            <input type="password" id="passwordInput" placeholder="••••••••" />
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn-primary" style="width:100%; margin-top:10px; font-size:1.1rem;">
+          Sign In
+        </button>
+      </form>
+
+      <p class="login-footer-text">
+        Don't have an account? <span>Sign up</span>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    const form = document.getElementById('loginForm');
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const errorDiv = document.getElementById('loginError');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorDiv.style.display = 'none';
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      if (!email || !password) {
+        errorDiv.textContent = 'Please fill in all fields.';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      submitBtn.textContent = 'Signing in...';
+      submitBtn.disabled = true;
+
+      try {
+        const res = await fetch('http://localhost:5000/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem('maatriCareUser', data.user || email.split('@')[0]);
+          window.location.href = 'dashboard.html';
+        } else {
+          errorDiv.textContent = data.error || 'Login failed.';
+          errorDiv.style.display = 'block';
+        }
+      } catch (err) {
+        errorDiv.textContent = 'Cannot connect to server. Ensure backend is running.';
+        errorDiv.style.display = 'block';
+      } finally {
+        submitBtn.textContent = 'Sign In';
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="../public/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shopping - MaatriCare AI</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="page-content">
+    <div class="page-header">
+      <h1>Shopping &amp; Recommendations</h1>
+      <p>Top-rated essentials recommended by MaatriCare experts.</p>
+    </div>
+
+    <div id="productsGrid" class="products-grid"></div>
+  </div>
+
+  <script src="../js/layout.js"></script>
+  <script>
+    function fetchProducts() {
+      fetch('http://localhost:5000/api/shopping')
+        .then(res => res.json())
+        .then(data => renderProducts(data))
+        .catch(err => console.error(err));
+    }
+
+    function renderProducts(products) {
+      const grid = document.getElementById('productsGrid');
+      grid.innerHTML = products.map(product => `
+        <div class="glass-panel product-card">
+          <div class="product-image" style="${product.image ? 'background-image:url(' + product.image + ');' : ''}">
+            ${!product.image ? '<i data-lucide="shopping-bag" width="48" height="48" style="color:var(--primary); opacity:0.6;"></i>' : ''}
+          </div>
+          <div>
+            <div class="product-category">${product.category}</div>
+            <h3>${product.name}</h3>
+            <div class="product-rating">
+              <i data-lucide="star" width="16" height="16" style="fill:#ffbd00;"></i> ${product.rating} / 5.0
+            </div>
+          </div>
+          <div class="product-footer">
+            <span class="product-price">${product.price}</span>
+            <button class="btn-primary product-buy-btn" onclick="window.open('${product.url}', '_blank')">
+              Buy Now <i data-lucide="external-link" width="14" height="14"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    setTimeout(fetchProducts, 100);
+  </script>
+</body>
+</html>
