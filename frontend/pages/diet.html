@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="../public/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diet Plan - MaatriCare AI</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="page-content">
+    <div class="page-header">
+      <h1>Diet &amp; Meal Plans</h1>
+      <p>Nutritious recommendations tailored for your pregnancy stage.</p>
+    </div>
+
+    <div class="glass-panel diet-filter">
+      <div>
+        <label>Select Trimester</label>
+        <select id="trimesterSelect" onchange="fetchDiet()">
+          <option value="trimester1">First Trimester (Weeks 1-12)</option>
+          <option value="trimester2">Second Trimester (Weeks 13-26)</option>
+          <option value="trimester3">Third Trimester (Weeks 27-40)</option>
+        </select>
+      </div>
+      <div>
+        <label>Dietary Preference</label>
+        <select id="dietTypeSelect" onchange="fetchDiet()">
+          <option value="veg">Vegetarian</option>
+          <option value="nonveg">Non-Vegetarian</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="dietPlanContainer"></div>
+  </div>
+
+  <script src="../js/layout.js"></script>
+  <script>
+    function fetchDiet() {
+      const trimester = document.getElementById('trimesterSelect').value;
+      const dietType = document.getElementById('dietTypeSelect').value;
+
+      fetch(`http://localhost:5000/api/diet?trimester=${trimester}&type=${dietType}`)
+        .then(res => res.json())
+        .then(data => renderDiet(data, trimester, dietType))
+        .catch(err => console.error(err));
+    }
+
+    function renderDiet(plan, trimester, dietType) {
+      const container = document.getElementById('dietPlanContainer');
+      const label = trimester.replace('trimester', 'Trimester ') + ' - ' + dietType + ' Plan';
+
+      const renderList = (items) => items ? items.map(item => `<li>${item}</li>`).join('') : '';
+
+      container.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:32px;">
+          <div class="glass-panel diet-plan-panel">
+            <h2>
+              <i data-lucide="apple" width="24" height="24" style="color:var(--primary);"></i>
+              ${label}
+            </h2>
+            <div class="meals-grid">
+              <div class="meal-card">
+                <h3>Breakfast</h3>
+                <ul>${renderList(plan.breakfast)}</ul>
+              </div>
+              <div class="meal-card">
+                <h3>Lunch</h3>
+                <ul>${renderList(plan.lunch)}</ul>
+              </div>
+              <div class="meal-card">
+                <h3>Dinner</h3>
+                <ul>${renderList(plan.dinner)}</ul>
+              </div>
+            </div>
+          </div>
+          <div class="tips-grid">
+            <div class="glass-panel tip-card">
+              <div class="tip-icon hydration">
+                <i data-lucide="droplet" width="32" height="32" style="color:white;"></i>
+              </div>
+              <div>
+                <h3>Hydration Goal</h3>
+                <p>Drink 8-10 glasses of water daily</p>
+              </div>
+            </div>
+            <div class="glass-panel tip-card">
+              <div class="tip-icon caffeine">
+                <i data-lucide="coffee" width="32" height="32" style="color:white;"></i>
+              </div>
+              <div>
+                <h3>Caffeine Limit</h3>
+                <p>Stay under 200mg of caffeine per day</p>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      lucide.createIcons();
+    }
+
+    setTimeout(fetchDiet, 100);
+  </script>
+</body>
+</html>

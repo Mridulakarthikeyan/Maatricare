@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="../public/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reminders - MaatriCare AI</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="page-content">
+    <div class="reminders-header">
+      <h1>My Reminders</h1>
+      <button class="btn-primary" style="padding:10px 20px; font-size:1rem; border-radius:12px;" onclick="toggleForm()">
+        <i data-lucide="plus" width="20" height="20"></i> <span id="formToggleText">Add Reminder</span>
+      </button>
+    </div>
+
+    <form id="reminderForm" class="glass-panel reminder-form hidden" onsubmit="handleAddReminder(event)">
+      <div>
+        <label>Title</label>
+        <input type="text" id="reminderTitle" required placeholder="e.g. Ultrasound" />
+      </div>
+      <div>
+        <label>Date</label>
+        <input type="date" id="reminderDate" required />
+      </div>
+      <div>
+        <label>Time</label>
+        <input type="time" id="reminderTime" required />
+      </div>
+      <div class="save-btn-wrapper">
+        <button type="submit" class="btn-primary" style="height:52px;">Save</button>
+      </div>
+    </form>
+
+    <div id="remindersGrid" class="reminders-grid"></div>
+  </div>
+
+  <script src="../js/layout.js"></script>
+  <script>
+    let showForm = false;
+
+    function toggleForm() {
+      showForm = !showForm;
+      const form = document.getElementById('reminderForm');
+      const text = document.getElementById('formToggleText');
+      form.className = showForm ? 'glass-panel reminder-form' : 'glass-panel reminder-form hidden';
+      text.textContent = showForm ? 'Cancel' : 'Add Reminder';
+    }
+
+    function fetchReminders() {
+      const user = localStorage.getItem('maatriCareUser');
+      fetch(`http://localhost:5000/api/reminders/${user}`)
+        .then(res => res.json())
+        .then(data => renderReminders(data))
+        .catch(err => console.error(err));
+    }
+
+    function renderReminders(reminders) {
+      const grid = document.getElementById('remindersGrid');
+      grid.innerHTML = reminders.map(r => `
+        <div class="glass-panel reminder-card">
+          <div class="reminder-card-header">
+            <h3>${r.title}</h3>
+            <i data-lucide="bell" width="20" height="20" style="color:var(--primary);"></i>
+          </div>
+          <div class="reminder-card-date">
+            <i data-lucide="calendar" width="16" height="16"></i>
+            <span>${r.date} at ${r.time}</span>
+          </div>
+          <div class="reminder-status">${r.status.toUpperCase()}</div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    async function handleAddReminder(e) {
+      e.preventDefault();
+      const user = localStorage.getItem('maatriCareUser');
+      const title = document.getElementById('reminderTitle').value;
+      const date = document.getElementById('reminderDate').value;
+      const time = document.getElementById('reminderTime').value;
+
+      if (!title || !date || !time) return;
+
+      await fetch(`http://localhost:5000/api/reminders/${user}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, date, time })
+      });
+
+      toggleForm();
+      document.getElementById('reminderTitle').value = '';
+      document.getElementById('reminderDate').value = '';
+      document.getElementById('reminderTime').value = '';
+      fetchReminders();
+    }
+
+    setTimeout(fetchReminders, 100);
+  </script>
+</body>
+</html>

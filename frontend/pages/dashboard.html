@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="../public/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - MaatriCare AI</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="page-content">
+    <div style="max-width:1200px; margin:0 auto;">
+      <h1 style="font-size:2.5rem; margin-bottom:32px; color:var(--text-dark);">Your Health Dashboard</h1>
+
+      <div class="dashboard-grid">
+        <!-- Left Column -->
+        <div class="dashboard-left">
+          <div class="glass-panel health-input-panel">
+            <h2><i data-lucide="activity" width="20" height="20" style="color:var(--primary);"></i> Health Input</h2>
+            <div class="health-input-fields">
+              <div>
+                <label>Blood Pressure (mmHg)</label>
+                <input type="number" id="bpInput" placeholder="120" />
+              </div>
+              <div>
+                <label>Sugar Level (mg/dL)</label>
+                <input type="number" id="sugarInput" placeholder="100" />
+              </div>
+              <div>
+                <label>Weight (kg)</label>
+                <input type="number" id="weightInput" placeholder="65" />
+              </div>
+              <button class="btn-primary" onclick="handleRecordData()" style="margin-top:16px;">Record Data</button>
+            </div>
+          </div>
+
+          <div id="riskPanel" class="glass-panel risk-panel">
+            <h2><i data-lucide="alert-circle" width="20" height="20" id="riskIcon"></i> Risk Analysis</h2>
+            <p id="riskText" class="risk-text">Enter your health data to see risk analysis.</p>
+          </div>
+
+          <button class="sos-btn sos-button" onclick="alert('🚨 Emergency! Calling ambulance...'); window.location.href='tel:108';">
+            <i data-lucide="phone-call" width="24" height="24" style="fill:white;"></i> SOS Emergency
+          </button>
+        </div>
+
+        <!-- Right Column (Chatbot) -->
+        <div class="glass-panel chatbot-panel">
+          <h2>💬 AI Assistant</h2>
+          <div id="chatArea" class="chat-area"></div>
+          <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Ask about your pregnancy..." onkeydown="if(event.key==='Enter') handleSendMsg();" />
+            <button onclick="handleSendMsg()" class="btn-primary chat-send-btn">
+              <i data-lucide="send" width="20" height="20"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/layout.js"></script>
+  <script>
+    const chatMsgs = [{ sender: 'bot', text: "Hi! I'm your MaatriCare assistant. Ask me anything about your pregnancy. 💕" }];
+
+    function renderChat() {
+      const chatArea = document.getElementById('chatArea');
+      chatArea.innerHTML = chatMsgs.map(msg => {
+        const isUser = msg.sender === 'user';
+        return `<div class="chat-message ${isUser ? 'chat-user' : 'chat-bot'}" style="display:flex; gap:8px; align-items:flex-start;">
+          ${!isUser ? '<i data-lucide="bot" width="20" height="20" style="margin-top:2px; flex-shrink:0;"></i>' : ''}
+          <div>${msg.text}</div>
+          ${isUser ? '<i data-lucide="user-round" width="20" height="20" style="margin-top:2px; flex-shrink:0;"></i>' : ''}
+        </div>`;
+      }).join('');
+      chatArea.scrollTop = chatArea.scrollHeight;
+      lucide.createIcons();
+    }
+
+    async function handleRecordData() {
+      const bp = document.getElementById('bpInput').value;
+      const sugar = document.getElementById('sugarInput').value;
+      const weight = document.getElementById('weightInput').value;
+      const user = localStorage.getItem('maatriCareUser');
+
+      if (!bp || !sugar || !weight) {
+        alert("Please fill all fields ❌");
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:5000/api/health', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: user, bp, sugar, weight })
+        });
+        const data = await res.json();
+
+        const riskPanel = document.getElementById('riskPanel');
+        const riskText = document.getElementById('riskText');
+        const riskIcon = document.getElementById('riskIcon');
+
+        let type = 'info';
+        if (data.risk.includes('High')) type = 'danger';
+        else if (data.risk.includes('Moderate')) type = 'warning';
+        else if (data.risk.includes('safe')) type = 'success';
+
+        riskPanel.className = 'glass-panel risk-panel' + (type === 'danger' ? ' danger' : type === 'warning' ? ' warning' : '');
+        riskText.textContent = data.risk || 'Data Recorded ✅';
+        riskText.className = 'risk-text' + (type === 'danger' ? ' danger' : '');
+        riskIcon.style.color = type === 'danger' ? '#ff4d4d' : 'var(--text-dark)';
+      } catch (err) {
+        alert("Error saving data. Is the backend running?");
+      }
+    }
+
+    async function handleSendMsg() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      chatMsgs.push({ sender: 'user', text });
+      input.value = '';
+      renderChat();
+
+      try {
+        const res = await fetch('http://localhost:5000/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+        chatMsgs.push({ sender: 'bot', text: data.reply });
+      } catch (err) {
+        chatMsgs.push({ sender: 'bot', text: 'Sorry, I am offline right now. 💤' });
+      }
+      renderChat();
+    }
+
+    setTimeout(renderChat, 100);
+  </script>
+</body>
+</html>
